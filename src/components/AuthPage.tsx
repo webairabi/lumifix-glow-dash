@@ -26,13 +26,16 @@ function SignInForm() {
 
   const onSubmit = async (values: AuthValues) => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: values.email,
-      password: values.password,
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+      if (error) toast.error(error.message);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Sign in failed. Check your connection.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,15 +88,20 @@ function SignUpForm() {
 
   const onSubmit = async (values: AuthValues) => {
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: values.email,
-      password: values.password,
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      setSent(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        setSent(true);
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Sign up failed. Check your connection.");
+    } finally {
+      setLoading(false);
     }
   };
 
