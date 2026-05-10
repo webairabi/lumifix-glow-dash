@@ -4,7 +4,8 @@ import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useInvoices, useExpenses } from "@/hooks/useFinance";
+import { useInvoices, useExpenses, type Invoice } from "@/hooks/useFinance";
+import { EditInvoiceDialog, DeleteInvoiceDialog } from "@/components/InvoiceRowActions";
 import { formatAED } from "@/lib/format";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { NewInvoiceDialog, NewExpenseDialog } from "@/components/InvoiceDialogs";
@@ -101,16 +102,17 @@ function Dashboard() {
 
       <Card className="mt-3 bg-surface border-border/60 p-3">
         <p className="mb-2 text-sm font-semibold">Recent Invoices</p>
-        <div className="grid grid-cols-[auto_1fr_auto_auto] gap-x-3 gap-y-2 text-xs">
+        <div className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-x-2 gap-y-2 text-xs">
           <span className="text-muted-foreground">Invoice</span>
           <span className="text-muted-foreground">Team</span>
           <span className="text-right text-muted-foreground">AED</span>
           <span className="text-right text-muted-foreground">Status</span>
+          <span className="sr-only">Actions</span>
           {recent.map((inv) => (
             <RecentRow key={inv.id} inv={inv} />
           ))}
           {recent.length === 0 && (
-            <span className="col-span-4 py-4 text-center text-muted-foreground">No invoices yet.</span>
+            <span className="col-span-5 py-4 text-center text-muted-foreground">No invoices yet.</span>
           )}
         </div>
       </Card>
@@ -118,7 +120,7 @@ function Dashboard() {
   );
 }
 
-function RecentRow({ inv }: { inv: { id: string; invoice_no: string; team: string; amount: number; status: string } }) {
+function RecentRow({ inv }: { inv: Invoice }) {
   return (
     <>
       <span className="font-medium">{inv.invoice_no}</span>
@@ -130,6 +132,10 @@ function RecentRow({ inv }: { inv: { id: string; invoice_no: string; team: strin
         ) : (
           <Badge className="bg-gold/20 text-gold hover:bg-gold/20 border-0 text-[10px]">Pending</Badge>
         )}
+      </span>
+      <span className="flex justify-end gap-0.5">
+        <EditInvoiceDialog invoice={inv} />
+        <DeleteInvoiceDialog invoice={inv} />
       </span>
     </>
   );
