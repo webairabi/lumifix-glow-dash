@@ -79,6 +79,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Lumifix Enterprise" },
       { name: "description", content: "Finance management for your team" },
+      { property: "og:title", content: "Lumifix Enterprise" },
+      { name: "twitter:title", content: "Lumifix Enterprise" },
+      { property: "og:description", content: "Finance management for your team" },
+      { name: "twitter:description", content: "Finance management for your team" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2867a4ac-4486-4b6a-b17d-e6dce2255a9d/id-preview-01eb98dc--74192ce8-0c26-491c-a4ef-f573a729cf66.lovable.app-1778416343456.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2867a4ac-4486-4b6a-b17d-e6dce2255a9d/id-preview-01eb98dc--74192ce8-0c26-491c-a4ef-f573a729cf66.lovable.app-1778416343456.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:type", content: "website" },
     ],
     links: [
       {
