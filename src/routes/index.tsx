@@ -9,6 +9,7 @@ import { EditInvoiceDialog, DeleteInvoiceDialog } from "@/components/InvoiceRowA
 import { formatAED } from "@/lib/format";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { NewInvoiceDialog, NewExpenseDialog } from "@/components/InvoiceDialogs";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
+  const { user } = useAuth();
   const { data: invoices = [] } = useInvoices();
   const { data: expenses = [] } = useExpenses();
 
@@ -31,10 +33,14 @@ function Dashboard() {
   const pendingTotal = pendingInvoices.reduce((s, i) => s + Number(i.amount), 0);
   const recent = invoices.slice(0, 5);
 
+  const greeting = user?.user_metadata?.full_name
+    ? `Hello, ${user.user_metadata.full_name}`
+    : "Welcome back";
+
   return (
     <AppShell>
       <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-      <p className="mb-4 text-sm text-muted-foreground">Hello, Rabi (Dubai Office)</p>
+      <p className="mb-4 text-sm text-muted-foreground">{greeting}</p>
 
       <div className="grid grid-cols-2 gap-3">
         <Card className="bg-surface border-border/60 p-3">

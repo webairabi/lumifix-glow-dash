@@ -9,8 +9,11 @@ import {
 } from "@tanstack/react-router";
 
 import { Toaster } from "sonner";
+import { Loader2 } from "lucide-react";
 
 import appCss from "../styles.css?url";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthPage } from "@/components/AuthPage";
 
 function NotFoundComponent() {
   return (
@@ -74,14 +77,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { title: "Lumifix Enterprise" },
+      { name: "description", content: "Finance management for your team" },
     ],
     links: [
       {
@@ -110,13 +107,34 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function RootComponent() {
+function AppContent() {
   const { queryClient } = Route.useRouteContext();
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-gold" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <AuthPage />;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <Toaster theme="dark" position="top-center" richColors />
     </QueryClientProvider>
+  );
+}
+
+function RootComponent() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type Invoice = {
   id: string;
@@ -20,21 +21,25 @@ export type Expense = {
 };
 
 export function useInvoices() {
+  const { user } = useAuth();
   const qc = useQueryClient();
+
   useEffect(() => {
+    if (!user) return;
     const ch = supabase
       .channel("invoices-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, () => {
-        qc.invalidateQueries({ queryKey: ["invoices"] });
+        qc.invalidateQueries({ queryKey: ["invoices", user.id] });
       })
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [qc]);
+  }, [qc, user]);
 
   return useQuery({
-    queryKey: ["invoices"],
+    queryKey: ["invoices", user?.id],
+    enabled: !!user,
     queryFn: async (): Promise<Invoice[]> => {
       const { data, error } = await supabase
         .from("invoices")
@@ -47,26 +52,30 @@ export function useInvoices() {
 }
 
 export function useExpenses() {
+  const { user } = useAuth();
   const qc = useQueryClient();
+
   useEffect(() => {
+    if (!user) return;
     const ch = supabase
       .channel("expenses-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "expenses" }, () => {
-        qc.invalidateQueries({ queryKey: ["expenses"] });
+        qc.invalidateQueries({ queryKey: ["expenses", user.id] });
       })
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [qc]);
+  }, [qc, user]);
 
   return useQuery({
-    queryKey: ["expenses"],
+    queryKey: ["expenses", user?.id],
+    enabled: !!user,
     queryFn: async (): Promise<Expense[]> => {
       const { data, error } = await supabase
         .from("expenses")
         .select("*")
-        .order("occurred_on", { ascending: true });
+        .order("occurred_on", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Expense[];
     },
