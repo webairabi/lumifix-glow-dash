@@ -37,11 +37,11 @@ externalPort = 80
 [userenv]
 
 [userenv.shared]
-VITE_SUPABASE_URL = "https://kbidhnrzbjbwjntunegn.supabase.co"
+VITE_SUPABASE_URL = "https://dzetewyowsghkcrklxkw.supabase.co"
 VITE_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiaWRobnJ6Ympid2pudHVuZWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzOTk5MTAsImV4cCI6MjA5Mzk3NTkxMH0.HeqiQ2lP2C6T9bWE0fnFnyal8cIL4NM_5zEzE9jdnhI"
-SUPABASE_URL = "https://kbidhnrzbjbwjntunegn.supabase.co"
+SUPABASE_URL = "https://dzetewyowsghkcrklxkw.supabase.co"
 SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiaWRobnJ6Ympid2pudHVuZWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzOTk5MTAsImV4cCI6MjA5Mzk3NTkxMH0.HeqiQ2lP2C6T9bWE0fnFnyal8cIL4NM_5zEzE9jdnhI"
-VITE_SUPABASE_PROJECT_ID = "kbidhnrzbjbwjntunegn"
+VITE_SUPABASE_PROJECT_ID = "dzetewyowsghkcrklxkw"
 
 [deployment]
 deploymentTarget = "autoscale"
