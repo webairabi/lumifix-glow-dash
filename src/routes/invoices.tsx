@@ -7,6 +7,7 @@ import { Plus } from "lucide-react";
 import { useInvoices } from "@/hooks/useFinance";
 import { formatAED } from "@/lib/format";
 import { NewInvoiceDialog } from "@/components/InvoiceDialogs";
+import { EditInvoiceDialog, DeleteInvoiceDialog } from "@/components/InvoiceRowActions";
 
 export const Route = createFileRoute("/invoices")({
   component: InvoicesPage,
@@ -30,10 +31,10 @@ function InvoicesPage() {
       <div className="space-y-2">
         {invoices.map((inv) => (
           <Card key={inv.id} className="bg-surface border-border/60 p-3">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
                 <p className="text-sm font-semibold">{inv.invoice_no}</p>
-                <p className="text-xs text-muted-foreground">{inv.team}</p>
+                <p className="truncate text-xs text-muted-foreground">{inv.team}</p>
               </div>
               <div className="text-right">
                 <p className="text-sm font-bold tabular-nums">{formatAED(Number(inv.amount))} AED</p>
@@ -42,6 +43,10 @@ function InvoicesPage() {
                 ) : (
                   <Badge className="bg-gold/20 text-gold hover:bg-gold/20 border-0 text-[10px]">Pending</Badge>
                 )}
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <EditInvoiceDialog invoice={inv} />
+                <DeleteInvoiceDialog invoice={inv} />
               </div>
             </div>
           </Card>
