@@ -1,0 +1,1 @@
+create policy "public delete invoices" on public.invoices for delete using (true);
