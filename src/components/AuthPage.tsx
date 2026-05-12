@@ -89,13 +89,17 @@ function SignUpForm() {
   const onSubmit = async (values: AuthValues) => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
       });
       if (error) {
         toast.error(error.message);
+      } else if (data.session) {
+        // Auto-confirm is on — user is signed in. AuthProvider will route to dashboard.
+        toast.success("Account created! Welcome.");
       } else {
+        // Email confirmation required
         setSent(true);
       }
     } catch (err: unknown) {
