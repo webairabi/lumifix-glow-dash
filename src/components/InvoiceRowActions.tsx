@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Loader2 } from "lucide-react";
 import type { Invoice } from "@/hooks/useFinance";
 
 const schema = z.object({
@@ -31,6 +31,7 @@ type FormValues = z.infer<typeof schema>;
 
 export function EditInvoiceDialog({ invoice }: { invoice: Invoice }) {
   const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -53,6 +54,7 @@ export function EditInvoiceDialog({ invoice }: { invoice: Invoice }) {
   }, [open, invoice, form]);
 
   const onSubmit = async (values: FormValues) => {
+    setSaving(true);
     const { error } = await supabase
       .from("invoices")
       .update({
@@ -62,13 +64,14 @@ export function EditInvoiceDialog({ invoice }: { invoice: Invoice }) {
         status: values.status,
       })
       .eq("id", invoice.id);
+    setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success(`Invoice ${values.invoice_no} updated`);
     setOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => !saving && setOpen(v)}>
       <Button
         size="icon"
         variant="ghost"
@@ -107,8 +110,13 @@ export function EditInvoiceDialog({ invoice }: { invoice: Invoice }) {
             </Select>
           </div>
           <DialogFooter>
-            <Button type="submit" className="bg-gold text-gold-foreground hover:bg-gold/90">
-              Save Changes
+            <Button
+              type="submit"
+              disabled={saving}
+              className="bg-gold text-gold-foreground hover:bg-gold/90"
+            >
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {saving ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>
@@ -118,8 +126,13 @@ export function EditInvoiceDialog({ invoice }: { invoice: Invoice }) {
 }
 
 export function DeleteInvoiceDialog({ invoice }: { invoice: Invoice }) {
-  const handleDelete = async () => {
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setDeleting(true);
     const { error } = await supabase.from("invoices").delete().eq("id", invoice.id);
+    setDeleting(false);
     if (error) { toast.error(error.message); return; }
     toast.success(`Invoice ${invoice.invoice_no} deleted`);
   };
@@ -144,12 +157,14 @@ export function DeleteInvoiceDialog({ invoice }: { invoice: Invoice }) {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
+            disabled={deleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            Delete
+            {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {deleting ? "Deleting..." : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
