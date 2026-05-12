@@ -8,6 +8,7 @@ import { useInvoices } from "@/hooks/useFinance";
 import { formatAED } from "@/lib/format";
 import { NewInvoiceDialog } from "@/components/InvoiceDialogs";
 import { EditInvoiceDialog, DeleteInvoiceDialog } from "@/components/InvoiceRowActions";
+import { ViewInvoiceDialog } from "@/components/ViewInvoiceDialog";
 
 export const Route = createFileRoute("/invoices")({
   component: InvoicesPage,
@@ -45,6 +46,7 @@ function InvoicesPage() {
                 )}
               </div>
               <div className="flex flex-col gap-0.5">
+                <ViewInvoiceDialog invoice={inv} />
                 <EditInvoiceDialog invoice={inv} />
                 <DeleteInvoiceDialog invoice={inv} />
               </div>

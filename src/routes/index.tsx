@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useInvoices, useExpenses, type Invoice } from "@/hooks/useFinance";
 import { EditInvoiceDialog, DeleteInvoiceDialog } from "@/components/InvoiceRowActions";
+import { ViewInvoiceDialog } from "@/components/ViewInvoiceDialog";
 import { formatAED } from "@/lib/format";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { NewInvoiceDialog, NewExpenseDialog } from "@/components/InvoiceDialogs";
@@ -140,6 +141,7 @@ function RecentRow({ inv }: { inv: Invoice }) {
         )}
       </span>
       <span className="flex justify-end gap-0.5">
+        <ViewInvoiceDialog invoice={inv} />
         <EditInvoiceDialog invoice={inv} />
         <DeleteInvoiceDialog invoice={inv} />
       </span>
