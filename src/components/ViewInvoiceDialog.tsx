@@ -12,10 +12,9 @@ import { InvoiceTemplate } from "./InvoiceTemplate";
 
 // A4 in mm
 const A4_W_MM = 210;
-const A4_H_MM = 297;
-// Template pixel dimensions (matches InvoiceTemplate)
+
+// Template pixel width (matches InvoiceTemplate). Height is dynamic.
 const TEMPLATE_W_PX = 794;
-const TEMPLATE_H_PX = 1123;
 
 export function ViewInvoiceDialog({ invoice }: { invoice: Invoice }) {
   const [open, setOpen] = useState(false);
@@ -33,34 +32,51 @@ export function ViewInvoiceDialog({ invoice }: { invoice: Invoice }) {
         backgroundColor: "#ffffff",
         useCORS: true,
         windowWidth: TEMPLATE_W_PX,
-        windowHeight: TEMPLATE_H_PX,
         width: TEMPLATE_W_PX,
-        height: TEMPLATE_H_PX,
       });
 
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pdfW = pdf.internal.pageSize.getWidth();
       const pdfH = pdf.internal.pageSize.getHeight();
 
-      // Scale-to-fit: preserve aspect, never overflow either dimension
-      const ratio = Math.min(pdfW / A4_W_MM, pdfH / A4_H_MM); // = 1, but explicit
-      const imgAspect = canvas.width / canvas.height;
-      const pageAspect = pdfW / pdfH;
+      // Map captured canvas width → A4 width (mm). Then page height in source px.
+      const pxPerMm = canvas.width / pdfW;
+      const pageHeightPx = Math.floor(pdfH * pxPerMm);
+      const totalHeightPx = canvas.height;
 
-      let drawW: number;
-      let drawH: number;
-      if (imgAspect > pageAspect) {
-        drawW = pdfW * ratio;
-        drawH = drawW / imgAspect;
+      // Single-page fast path
+      if (totalHeightPx <= pageHeightPx) {
+        const drawH = totalHeightPx / pxPerMm;
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+        pdf.addImage(imgData, "JPEG", 0, 0, pdfW, drawH);
       } else {
-        drawH = pdfH * ratio;
-        drawW = drawH * imgAspect;
-      }
-      const offsetX = (pdfW - drawW) / 2;
-      const offsetY = (pdfH - drawH) / 2;
+        // Slice the source canvas into A4-page-sized chunks.
+        let renderedPx = 0;
+        let pageIndex = 0;
+        const sliceCanvas = document.createElement("canvas");
+        const ctx = sliceCanvas.getContext("2d");
+        if (!ctx) throw new Error("Canvas 2D not available");
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      pdf.addImage(imgData, "JPEG", offsetX, offsetY, drawW, drawH);
+        while (renderedPx < totalHeightPx) {
+          const sliceHeight = Math.min(pageHeightPx, totalHeightPx - renderedPx);
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = sliceHeight;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+          ctx.drawImage(
+            canvas,
+            0, renderedPx, canvas.width, sliceHeight,
+            0, 0, canvas.width, sliceHeight,
+          );
+          const drawH = sliceHeight / pxPerMm;
+          const imgData = sliceCanvas.toDataURL("image/jpeg", 0.95);
+          if (pageIndex > 0) pdf.addPage();
+          pdf.addImage(imgData, "JPEG", 0, 0, pdfW, drawH);
+          renderedPx += sliceHeight;
+          pageIndex += 1;
+        }
+      }
+
       pdf.save(`Invoice-${invoice.invoice_no}.pdf`);
       toast.success("Invoice PDF downloaded");
     } catch (e) {
@@ -90,8 +106,8 @@ export function ViewInvoiceDialog({ invoice }: { invoice: Invoice }) {
           <InvoiceTemplate ref={ref} invoice={invoice} />
         </div>
 
-        {/* Off-screen, fixed A4-sized clone used exclusively for PDF capture.
-            Guarantees the canvas is always exactly A4 proportions. */}
+        {/* Off-screen clone used for PDF capture. Width is fixed to A4 ratio;
+            height grows naturally so multi-page invoices render fully. */}
         <div
           aria-hidden
           style={{
@@ -99,8 +115,6 @@ export function ViewInvoiceDialog({ invoice }: { invoice: Invoice }) {
             left: "-10000px",
             top: 0,
             width: `${TEMPLATE_W_PX}px`,
-            height: `${TEMPLATE_H_PX}px`,
-            overflow: "hidden",
             background: "#ffffff",
             pointerEvents: "none",
           }}
@@ -109,8 +123,6 @@ export function ViewInvoiceDialog({ invoice }: { invoice: Invoice }) {
             ref={offscreenRef}
             style={{
               width: `${TEMPLATE_W_PX}px`,
-              height: `${TEMPLATE_H_PX}px`,
-              overflow: "hidden",
               background: "#ffffff",
             }}
           >
