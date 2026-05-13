@@ -41,6 +41,21 @@ export function ViewInvoiceDialog({ invoice }: { invoice: Invoice }) {
         useCORS: true,
         windowWidth: TEMPLATE_W_PX,
         width: TEMPLATE_W_PX,
+        onclone: (doc) => {
+          // html2canvas can't parse oklch() — neutralize all inherited colors
+          // in the cloned document. The InvoiceTemplate uses inline hex styles
+          // for its own visuals, so this only strips the design-token leaks.
+          const style = doc.createElement("style");
+          style.textContent = `
+            *, *::before, *::after {
+              background-color: #ffffff !important;
+              color: #000000 !important;
+              border-color: #000000 !important;
+              box-shadow: none !important;
+            }
+          `;
+          doc.head.appendChild(style);
+        },
       });
 
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
