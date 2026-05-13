@@ -1,55 +1,29 @@
-# Lumifix Enterprise — Mobile Dashboard
+## Goal
+Ensure the generated invoice PDF always fits on a single A4 page, regardless of how many line items or how much content is in the invoice — no clipping, no awkward scaling, no second blank page.
 
-A dark, gold-accented mobile dashboard for invoice management, backed by Lovable Cloud (Supabase) so data persists.
+## Changes (all in `src/components/ViewInvoiceDialog.tsx`)
 
-## Visual design
-- Background: near-black (`#0A0A0A`), cards: `#141414` with subtle gold borders
-- Accent: gold `#FFD700` (primary), green `#22C55E` for Paid, cyan `#22D3EE` for expenses line
-- Typography: bold white headings, muted gray subtitles
-- Mobile-first layout (max-width container ~420px), rounded-2xl cards
-- Set preview viewport to mobile
+1. **Render at fixed A4 aspect ratio before capture**
+   - Wrap `InvoiceTemplate` in an off-screen container sized to exact A4 proportions at the template's pixel width (794 × 1123 px = 210 × 297 mm at 96dpi).
+   - Pass `windowWidth: 794` and `height: 1123` to `html2canvas` so the captured canvas is always one full A4 page in proportion.
 
-## Pages & routes
-- `/` — Dashboard (main screen from the mockup)
-- `/invoices` — full invoice list
-- `/expenses` — expenses list + add
-- `/customers` — placeholder list
-- `/more` — placeholder settings
-- Bottom nav present on all five routes (layout route)
+2. **Scale-to-fit math when adding to jsPDF**
+   - Compute scale = `min(pdfW / imgW_mm, pdfH / imgH_mm)` so the image always fits within page bounds (currently we force width = pdfW, which can overflow height and clip).
+   - Center the image on the page using the leftover margin.
+   - Use a single `pdf.addImage(...)` call with no second page.
 
-## Dashboard composition
-1. **Header**: Lumifix logo mark + "Lumifix Enterprise", title "Dashboard", subtitle "Hello, Rabi (Dubai Office)"
-2. **Stat cards** (2-up grid):
-   - Total Revenue (AED) — sum of all `paid` invoice amounts, with up-trend arrow
-   - Pending Invoices (AED) — sum of `pending` amounts + count badge
-3. **Monthly Performance chart** (Recharts `AreaChart`): Sales (gold) and Expenses (cyan) lines over months, derived from invoice + expense data grouped by month
-4. **Action buttons row**: `+ New Invoice`, `+ Add Expense`, `View Reports` — gold outline style; first two open dialogs, third routes to a reports view
-5. **Recent Invoices table**: latest 5 entries, columns Invoice / Team / AED / Status; status pill colored green (Paid) or gold (Pending)
-6. **Bottom nav**: Dashboard, Invoices, Expenses, Customers, More (lucide icons; active tab in gold)
+3. **Adaptive spacer rows in `InvoiceTemplate.tsx`** (small tweak)
+   - Currently always renders 8 spacer rows. For invoices that may grow later (multi-line items), cap total rows so the rendered template never exceeds 1123 px. For now (single-line invoice), reduce spacer rows slightly if needed to guarantee fit, or rely solely on the scale-to-fit math above.
+   - Keep this minimal — the scale-to-fit fix in step 2 is the durable solution.
 
-## Forms (dialogs)
-- **New Invoice**: Invoice ID (auto-suggested next `INV-####`), Team (text), Amount (number, AED), Status (Paid/Pending) — inserts into `invoices`
-- **Add Expense**: Category, Amount, Date — inserts into `expenses`
-- React Hook Form + Zod validation, toast on success
+4. **Use JPEG instead of PNG**
+   - `canvas.toDataURL("image/jpeg", 0.95)` + `pdf.addImage(..., "JPEG", ...)` — smaller file, same visual quality for an invoice, and avoids occasional jsPDF PNG sizing quirks.
 
-## Data layer (Lovable Cloud)
-Tables:
-- `invoices` (id uuid, invoice_no text unique, team text, amount numeric, status text check in ('paid','pending'), created_at timestamptz, user_id uuid)
-- `expenses` (id, category, amount, occurred_on date, created_at, user_id)
+## Technical notes
+- Keep `scale: 2` in html2canvas for crisp output.
+- A4 in mm: 210 × 297. jsPDF's `getWidth()` / `getHeight()` already returns mm.
+- The fit calculation: `ratio = Math.min(pdfW / (canvas.width * mmPerPx), pdfH / (canvas.height * mmPerPx))` then draw at `canvas.width * mmPerPx * ratio` × `canvas.height * mmPerPx * ratio`, centered.
 
-RLS: enable on both; policies allow authenticated users to read/insert/update their own rows. For simplicity (no auth yet), we'll allow public read/insert via RLS so the demo works immediately — flagged for tightening later.
-
-Realtime: subscribe to both tables so stats, chart, and table update live on insert.
-
-## Tech
-- React + TanStack Router (existing template)
-- Tailwind v4 with semantic tokens added to `src/styles.css` (`--gold`, `--gold-foreground`, `--surface`, etc.)
-- shadcn components: Button, Card, Dialog, Input, Select, Table, Badge, Sonner
-- Recharts for the chart
-- Lucide icons for nav + stat icons
-- Supabase client via Lovable Cloud for persistence + realtime
-
-## Out of scope (can add later)
-- Auth (login screen, per-user data isolation)
-- Edit/delete invoices, pagination
-- Real reports page (will be a simple placeholder)
+## Out of scope
+- Multi-page invoices (would need pagination logic in the template itself).
+- Changes to the invoice visual design.
