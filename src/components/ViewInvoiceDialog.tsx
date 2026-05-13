@@ -12,7 +12,7 @@ import { InvoiceTemplate } from "./InvoiceTemplate";
 
 // A4 in mm
 const A4_W_MM = 210;
-const A4_H_MM = 297;
+
 // Template pixel width (matches InvoiceTemplate). Height is dynamic.
 const TEMPLATE_W_PX = 794;
 
