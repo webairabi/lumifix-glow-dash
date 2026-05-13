@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Eye, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -10,17 +12,23 @@ import html2canvas from "html2canvas";
 import type { Invoice } from "@/hooks/useFinance";
 import { InvoiceTemplate } from "./InvoiceTemplate";
 
-// A4 in mm
-const A4_W_MM = 210;
-
 // Template pixel width (matches InvoiceTemplate). Height is dynamic.
 const TEMPLATE_W_PX = 794;
+
+export type PdfMargins = { top: number; right: number; bottom: number; left: number };
+const DEFAULT_MARGINS: PdfMargins = { top: 10, right: 10, bottom: 10, left: 10 };
 
 export function ViewInvoiceDialog({ invoice }: { invoice: Invoice }) {
   const [open, setOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [margins, setMargins] = useState<PdfMargins>(DEFAULT_MARGINS);
   const ref = useRef<HTMLDivElement>(null);
   const offscreenRef = useRef<HTMLDivElement>(null);
+
+  const setMargin = (k: keyof PdfMargins) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = Math.max(0, Math.min(40, Number(e.target.value) || 0));
+    setMargins((m) => ({ ...m, [k]: v }));
+  };
 
   const handleDownload = async () => {
     const node = offscreenRef.current;
@@ -39,18 +47,21 @@ export function ViewInvoiceDialog({ invoice }: { invoice: Invoice }) {
       const pdfW = pdf.internal.pageSize.getWidth();
       const pdfH = pdf.internal.pageSize.getHeight();
 
-      // Map captured canvas width → A4 width (mm). Then page height in source px.
-      const pxPerMm = canvas.width / pdfW;
-      const pageHeightPx = Math.floor(pdfH * pxPerMm);
+      // Printable area after margins
+      const innerW = Math.max(10, pdfW - margins.left - margins.right);
+      const innerH = Math.max(10, pdfH - margins.top - margins.bottom);
+
+      // Map captured canvas width → printable width (mm). Page-height in source px.
+      const pxPerMm = canvas.width / innerW;
+      const pageHeightPx = Math.floor(innerH * pxPerMm);
       const totalHeightPx = canvas.height;
 
       // Single-page fast path
       if (totalHeightPx <= pageHeightPx) {
         const drawH = totalHeightPx / pxPerMm;
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
-        pdf.addImage(imgData, "JPEG", 0, 0, pdfW, drawH);
+        pdf.addImage(imgData, "JPEG", margins.left, margins.top, innerW, drawH);
       } else {
-        // Slice the source canvas into A4-page-sized chunks.
         let renderedPx = 0;
         let pageIndex = 0;
         const sliceCanvas = document.createElement("canvas");
@@ -71,7 +82,7 @@ export function ViewInvoiceDialog({ invoice }: { invoice: Invoice }) {
           const drawH = sliceHeight / pxPerMm;
           const imgData = sliceCanvas.toDataURL("image/jpeg", 0.95);
           if (pageIndex > 0) pdf.addPage();
-          pdf.addImage(imgData, "JPEG", 0, 0, pdfW, drawH);
+          pdf.addImage(imgData, "JPEG", margins.left, margins.top, innerW, drawH);
           renderedPx += sliceHeight;
           pageIndex += 1;
         }
@@ -106,8 +117,28 @@ export function ViewInvoiceDialog({ invoice }: { invoice: Invoice }) {
           <InvoiceTemplate ref={ref} invoice={invoice} />
         </div>
 
-        {/* Off-screen clone used for PDF capture. Width is fixed to A4 ratio;
-            height grows naturally so multi-page invoices render fully. */}
+        {/* Configurable PDF margins (mm) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+          {(["top", "right", "bottom", "left"] as const).map((side) => (
+            <div key={side} className="space-y-1">
+              <Label htmlFor={`m-${side}`} className="text-xs capitalize text-muted-foreground">
+                {side} margin (mm)
+              </Label>
+              <Input
+                id={`m-${side}`}
+                type="number"
+                min={0}
+                max={40}
+                step={1}
+                value={margins[side]}
+                onChange={setMargin(side)}
+                className="h-8"
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Off-screen clone used for PDF capture. */}
         <div
           aria-hidden
           style={{
@@ -121,16 +152,20 @@ export function ViewInvoiceDialog({ invoice }: { invoice: Invoice }) {
         >
           <div
             ref={offscreenRef}
-            style={{
-              width: `${TEMPLATE_W_PX}px`,
-              background: "#ffffff",
-            }}
+            style={{ width: `${TEMPLATE_W_PX}px`, background: "#ffffff" }}
           >
             <InvoiceTemplate invoice={invoice} />
           </div>
         </div>
 
         <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setMargins(DEFAULT_MARGINS)}
+            disabled={downloading}
+          >
+            Reset margins
+          </Button>
           <Button
             onClick={handleDownload}
             disabled={downloading}
